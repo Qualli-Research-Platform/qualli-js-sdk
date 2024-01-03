@@ -1307,14 +1307,16 @@ var QualliSDK = /*#__PURE__*/function () {
       if (window.innerWidth < 600) {
         Object.assign(iframe.style, _objectSpread(_objectSpread({}, PopupStyles.styles.screens.small), {}, {
           borderTopLeftRadius: borderRadius,
-          borderTopRightRadius: borderRadius
+          borderTopRightRadius: borderRadius,
+          zIndex: 999
         }));
       } else {
         Object.assign(iframe.style, _objectSpread(_objectSpread(_objectSpread({}, PopupStyles.styles.screens.large), popupPlacementHorizontalStyles), {}, {
           borderRadius: borderRadius,
           borderColor: borderColor,
           borderWidth: borderWidth,
-          border: 'solid'
+          border: 'solid',
+          zIndex: 999
         }));
       }
       iframe.src = "".concat(urls.popupIframe, "?").concat(queryParmasString);
