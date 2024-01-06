@@ -1051,16 +1051,18 @@ var QualliSDK = /*#__PURE__*/function () {
   function QualliSDK() {
     var _this = this;
     _classCallCheck(this, QualliSDK);
-    _defineProperty(this, "popupId", 'qualli-survey-popup-iframe');
     _defineProperty(this, "company", {});
     _defineProperty(this, "ready", false);
-    _defineProperty(this, "userSessionKey", '');
-    _defineProperty(this, "userKey", '');
-    _defineProperty(this, "apiKey", '');
-    _defineProperty(this, "popupInFrame", false);
-    _defineProperty(this, "previousUrl", '');
-    _defineProperty(this, "postMessage", function (message, data) {
-      var iframe = document.getElementById(_this.popupId);
+    _defineProperty(this, "_popupId", 'qualli-survey-popup-iframe');
+    _defineProperty(this, "_userSessionKey", '');
+    _defineProperty(this, "_userKey", '');
+    _defineProperty(this, "_apiKey", '');
+    _defineProperty(this, "_popupInFrame", false);
+    _defineProperty(this, "_previousUrl", '');
+    _defineProperty(this, "_triggerQueue", []);
+    _defineProperty(this, "_attributesQueue", []);
+    _defineProperty(this, "_postMessage", function (message, data) {
+      var iframe = document.getElementById(_this._popupId);
       if (iframe) {
         iframe.contentWindow.postMessage({
           message: {
@@ -1070,7 +1072,7 @@ var QualliSDK = /*#__PURE__*/function () {
         }, '*');
       }
     });
-    this.handleIframeMessages = this.handleIframeMessages.bind(this);
+    this._handleIframeMessages = this._handleIframeMessages.bind(this);
   }
   _createClass(QualliSDK, [{
     key: "init",
@@ -1085,7 +1087,7 @@ var QualliSDK = /*#__PURE__*/function () {
               // save the key in cookies
               userKey = api.get('qualli_user_key');
               userSessionKey = api.get('qualli_user_session_key');
-              this.apiKey = apiKey;
+              this._apiKey = apiKey;
               _context.next = 5;
               return ApiManager.identify(apiKey, userKey, userSessionKey);
             case 5:
@@ -1098,15 +1100,16 @@ var QualliSDK = /*#__PURE__*/function () {
             case 8:
               api.set('qualli_user_session_key', response.session_key);
               api.set('qualli_user_key', response.app_user_key);
-              this.userSessionKey = response.session_key;
-              this.userKey = response.app_user_key;
+              this._userSessionKey = response.session_key;
+              this._userKey = response.app_user_key;
               this.company = response.company_info;
               this.ready = true;
               if (options !== null && options !== void 0 && options.trackScreens || !options) {
-                this.trackScreenChange();
-                this.setupScreenTracking();
+                this._trackScreenChange();
+                this._setupScreenTracking();
               }
-            case 15:
+              this._checkQueueAfterInit();
+            case 16:
             case "end":
               return _context.stop();
           }
@@ -1118,42 +1121,111 @@ var QualliSDK = /*#__PURE__*/function () {
       return init;
     }()
   }, {
+    key: "_checkQueueAfterInit",
+    value: function () {
+      var _checkQueueAfterInit2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee4() {
+        var _this2 = this;
+        return _regeneratorRuntime.wrap(function _callee4$(_context4) {
+          while (1) switch (_context4.prev = _context4.next) {
+            case 0:
+              if (!(this._attributesQueue.length > 0)) {
+                _context4.next = 3;
+                break;
+              }
+              _context4.next = 3;
+              return Promise.all(this._attributesQueue.map( /*#__PURE__*/function () {
+                var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee2(attributes) {
+                  return _regeneratorRuntime.wrap(function _callee2$(_context2) {
+                    while (1) switch (_context2.prev = _context2.next) {
+                      case 0:
+                        _context2.next = 2;
+                        return _this2.setAttributes(attributes);
+                      case 2:
+                      case "end":
+                        return _context2.stop();
+                    }
+                  }, _callee2);
+                }));
+                return function (_x3) {
+                  return _ref.apply(this, arguments);
+                };
+              }()));
+            case 3:
+              // see if we have any triggers to perform
+              if (this._triggerQueue.length > 0) {
+                this._triggerQueue.forEach( /*#__PURE__*/function () {
+                  var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3(trigger) {
+                    return _regeneratorRuntime.wrap(function _callee3$(_context3) {
+                      while (1) switch (_context3.prev = _context3.next) {
+                        case 0:
+                          _context3.next = 2;
+                          return _this2.performTrigger(trigger);
+                        case 2:
+                        case "end":
+                          return _context3.stop();
+                      }
+                    }, _callee3);
+                  }));
+                  return function (_x4) {
+                    return _ref2.apply(this, arguments);
+                  };
+                }());
+              }
+            case 4:
+            case "end":
+              return _context4.stop();
+          }
+        }, _callee4, this);
+      }));
+      function _checkQueueAfterInit() {
+        return _checkQueueAfterInit2.apply(this, arguments);
+      }
+      return _checkQueueAfterInit;
+    }()
+  }, {
     key: "performTrigger",
     value: function () {
-      var _performTrigger = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee2(trigger) {
+      var _performTrigger = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee5(trigger) {
         var res, _res$data, surveys;
-        return _regeneratorRuntime.wrap(function _callee2$(_context2) {
-          while (1) switch (_context2.prev = _context2.next) {
+        return _regeneratorRuntime.wrap(function _callee5$(_context5) {
+          while (1) switch (_context5.prev = _context5.next) {
             case 0:
-              _context2.next = 2;
-              return ApiManager.performTrigger(this.apiKey, this.userSessionKey, {
+              if (this.ready) {
+                _context5.next = 3;
+                break;
+              }
+              this._triggerQueue.push(trigger);
+              return _context5.abrupt("return");
+            case 3:
+              _context5.next = 5;
+              return ApiManager.performTrigger(this._apiKey, this._userSessionKey, {
                 name: trigger
               });
-            case 2:
-              res = _context2.sent;
+            case 5:
+              res = _context5.sent;
               if (!(res !== null && res !== void 0 && res.success)) {
-                _context2.next = 9;
+                _context5.next = 12;
                 break;
               }
               // see if we have any open surveys
               surveys = res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 || (_res$data = _res$data.surveys) === null || _res$data === void 0 ? void 0 : _res$data.data;
               if (!((surveys === null || surveys === void 0 ? void 0 : surveys.length) > 0)) {
-                _context2.next = 9;
+                _context5.next = 12;
                 break;
               }
-              if (this.popupInFrame) {
-                _context2.next = 9;
+              if (this._popupInFrame) {
+                _context5.next = 12;
                 break;
               }
-              this.showPopup(surveys[0]);
-              return _context2.abrupt("return");
-            case 9:
+              this._showPopup(surveys[0]);
+              return _context5.abrupt("return");
+            case 12:
             case "end":
-              return _context2.stop();
+              return _context5.stop();
           }
-        }, _callee2, this);
+        }, _callee5, this);
       }));
-      function performTrigger(_x3) {
+      function performTrigger(_x5) {
         return _performTrigger.apply(this, arguments);
       }
       return performTrigger;
@@ -1161,20 +1233,27 @@ var QualliSDK = /*#__PURE__*/function () {
   }, {
     key: "setAttributes",
     value: function () {
-      var _setAttributes = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3() {
+      var _setAttributes = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee6() {
         var attributes,
-          _args3 = arguments;
-        return _regeneratorRuntime.wrap(function _callee3$(_context3) {
-          while (1) switch (_context3.prev = _context3.next) {
+          _args6 = arguments;
+        return _regeneratorRuntime.wrap(function _callee6$(_context6) {
+          while (1) switch (_context6.prev = _context6.next) {
             case 0:
-              attributes = _args3.length > 0 && _args3[0] !== undefined ? _args3[0] : {};
-              _context3.next = 3;
-              return ApiManager.setUserAttributes(this.apiKey, this.userSessionKey, attributes);
-            case 3:
+              attributes = _args6.length > 0 && _args6[0] !== undefined ? _args6[0] : {};
+              if (this.ready) {
+                _context6.next = 4;
+                break;
+              }
+              this._attributesQueue.push(attributes);
+              return _context6.abrupt("return");
+            case 4:
+              _context6.next = 6;
+              return ApiManager.setUserAttributes(this._apiKey, this._userSessionKey, attributes);
+            case 6:
             case "end":
-              return _context3.stop();
+              return _context6.stop();
           }
-        }, _callee3, this);
+        }, _callee6, this);
       }));
       function setAttributes() {
         return _setAttributes.apply(this, arguments);
@@ -1184,30 +1263,30 @@ var QualliSDK = /*#__PURE__*/function () {
   }, {
     key: "reset",
     value: function reset() {
-      var _this2 = this;
-      if (this.popupInFrame) {
-        this.closePopup();
+      var _this3 = this;
+      if (this._popupInFrame) {
+        this._closePopup();
       }
 
       // clear cookies
       api.remove('qualli_user_session_key');
       api.remove('qualli_user_key');
       this.ready = false;
-      this.userSessionKey = '';
-      this.userKey = '';
-      this.surveyToComplete = undefined;
-      this.popupInFrame = false;
-      this.previousUrl = '';
+      this._userSessionKey = '';
+      this._userKey = '';
+      this._surveyToComplete = undefined;
+      this._popupInFrame = false;
+      this._previousUrl = '';
 
       // re-init
       setTimeout(function () {
-        _this2.init(_this2.apiKey);
+        _this3.init(_this3._apiKey);
       }, 1 * 1000);
     }
   }, {
-    key: "setupScreenTracking",
-    value: function setupScreenTracking() {
-      var _this3 = this;
+    key: "_setupScreenTracking",
+    value: function _setupScreenTracking() {
+      var _this4 = this;
       var originalPushState = history.pushState;
       var originalReplaceState = history.replaceState;
       history.pushState = function () {
@@ -1215,74 +1294,74 @@ var QualliSDK = /*#__PURE__*/function () {
           args[_key] = arguments[_key];
         }
         originalPushState.apply(history, args);
-        _this3.trackScreenChange();
+        _this4._trackScreenChange();
       };
       history.replaceState = function () {
         for (var _len2 = arguments.length, args = new Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
           args[_key2] = arguments[_key2];
         }
         originalReplaceState.apply(history, args);
-        _this3.trackScreenChange();
+        _this4._trackScreenChange();
       };
       window.addEventListener('popstate', function () {
-        _this3.trackScreenChange();
+        _this4._trackScreenChange();
       });
     }
   }, {
-    key: "trackScreenChange",
+    key: "_trackScreenChange",
     value: function () {
-      var _trackScreenChange = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee4() {
+      var _trackScreenChange2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee7() {
         var fulllURL, path, res, _res$data2, surveys;
-        return _regeneratorRuntime.wrap(function _callee4$(_context4) {
-          while (1) switch (_context4.prev = _context4.next) {
+        return _regeneratorRuntime.wrap(function _callee7$(_context7) {
+          while (1) switch (_context7.prev = _context7.next) {
             case 0:
               fulllURL = window.location.href; // remove query params
               path = fulllURL.split('?')[0];
-              if (!(path === this.previousUrl)) {
-                _context4.next = 4;
+              if (!(path === this._previousUrl)) {
+                _context7.next = 4;
                 break;
               }
-              return _context4.abrupt("return");
+              return _context7.abrupt("return");
             case 4:
-              this.previousUrl = path;
-              _context4.next = 7;
-              return ApiManager.trackScreen(this.apiKey, this.userSessionKey, {
+              this._previousUrl = path;
+              _context7.next = 7;
+              return ApiManager.trackScreen(this._apiKey, this._userSessionKey, {
                 url: path
               });
             case 7:
-              res = _context4.sent;
+              res = _context7.sent;
               if (!(res !== null && res !== void 0 && res.success)) {
-                _context4.next = 14;
+                _context7.next = 14;
                 break;
               }
               // see if we have any open surveys
               surveys = res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 || (_res$data2 = _res$data2.surveys) === null || _res$data2 === void 0 ? void 0 : _res$data2.data;
               if (!((surveys === null || surveys === void 0 ? void 0 : surveys.length) > 0)) {
-                _context4.next = 14;
+                _context7.next = 14;
                 break;
               }
-              if (this.popupInFrame) {
-                _context4.next = 14;
+              if (this._popupInFrame) {
+                _context7.next = 14;
                 break;
               }
-              this.showPopup(surveys[0]);
-              return _context4.abrupt("return");
+              this._showPopup(surveys[0]);
+              return _context7.abrupt("return");
             case 14:
             case "end":
-              return _context4.stop();
+              return _context7.stop();
           }
-        }, _callee4, this);
+        }, _callee7, this);
       }));
-      function trackScreenChange() {
-        return _trackScreenChange.apply(this, arguments);
+      function _trackScreenChange() {
+        return _trackScreenChange2.apply(this, arguments);
       }
-      return trackScreenChange;
+      return _trackScreenChange;
     }()
   }, {
-    key: "showPopup",
-    value: function showPopup(survey) {
-      this.surveyToComplete = survey;
-      this.popupInFrame = true;
+    key: "_showPopup",
+    value: function _showPopup(survey) {
+      this._surveyToComplete = survey;
+      this._popupInFrame = true;
       var iframe = document.createElement('iframe');
       var queryParams = {
         survey_id: survey.unique_identifier,
@@ -1321,7 +1400,7 @@ var QualliSDK = /*#__PURE__*/function () {
         }));
       }
       iframe.src = "".concat(urls.popupIframe, "?").concat(queryParmasString);
-      iframe.id = this.popupId; // An identifier for the iframe
+      iframe.id = this._popupId; // An identifier for the iframe
 
       // Append the iframe to the body
       document.body.appendChild(iframe);
@@ -1336,11 +1415,11 @@ var QualliSDK = /*#__PURE__*/function () {
       }, 100);
 
       // Event listener for messages from the iframe
-      window.addEventListener('message', this.handleIframeMessages, false);
+      window.addEventListener('message', this._handleIframeMessages, false);
     }
   }, {
-    key: "handleIframeMessages",
-    value: function handleIframeMessages(event) {
+    key: "_handleIframeMessages",
+    value: function _handleIframeMessages(event) {
       var _event$data;
       // Ensure the message is from the expected source
 
@@ -1348,45 +1427,45 @@ var QualliSDK = /*#__PURE__*/function () {
       var message = event.data.message;
       if (message.type === 'close') {
         // save the answers we have
-        this.closePopup();
+        this._closePopup();
       }
       if (message.type === 'ready') {
         var _this$company;
         // send the survey data
-        this.postMessage('survey_to_complete', this.surveyToComplete);
-        this.postMessage('auth', {
-          userSessionKey: this.userSessionKey,
-          apiKey: this.apiKey,
+        this._postMessage('survey_to_complete', this._surveyToComplete);
+        this._postMessage('auth', {
+          userSessionKey: this._userSessionKey,
+          apiKey: this._apiKey,
           companyPlan: (_this$company = this.company) === null || _this$company === void 0 ? void 0 : _this$company.plan
         });
       }
       if (message.type === 'survey_completed') {
-        this.closePopup();
+        this._closePopup();
       }
       if (message.type === 'survey_aborted') {
-        this.closePopup();
+        this._closePopup();
       }
       if (message.type === 'window_height_request') {
         var height = message.data.height;
-        this.resizePopup(height);
+        this._resizePopup(height);
       }
     }
   }, {
-    key: "resizePopup",
-    value: function resizePopup(height) {
+    key: "_resizePopup",
+    value: function _resizePopup(height) {
       if (!isNaN(height)) {
-        var iframe = document.getElementById(this.popupId);
+        var iframe = document.getElementById(this._popupId);
         if (iframe) {
           iframe.style.height = height + 'px';
         }
       }
     }
   }, {
-    key: "closePopup",
-    value: function closePopup() {
-      this.popupInFrame = false;
-      window.removeEventListener('message', this.handleIframeMessages);
-      var iframe = document.getElementById(this.popupId);
+    key: "_closePopup",
+    value: function _closePopup() {
+      this._popupInFrame = false;
+      window.removeEventListener('message', this._handleIframeMessages);
+      var iframe = document.getElementById(this._popupId);
       if (iframe) {
         iframe.style.bottom = '-100%';
         iframe.style.opacity = '0';
