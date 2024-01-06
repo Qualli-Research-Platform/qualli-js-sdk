@@ -1053,6 +1053,7 @@ var QualliSDK = /*#__PURE__*/function () {
     _classCallCheck(this, QualliSDK);
     _defineProperty(this, "popupId", 'qualli-survey-popup-iframe');
     _defineProperty(this, "company", {});
+    _defineProperty(this, "ready", false);
     _defineProperty(this, "userSessionKey", '');
     _defineProperty(this, "userKey", '');
     _defineProperty(this, "apiKey", '');
@@ -1100,11 +1101,12 @@ var QualliSDK = /*#__PURE__*/function () {
               this.userSessionKey = response.session_key;
               this.userKey = response.app_user_key;
               this.company = response.company_info;
+              this.ready = true;
               if (options !== null && options !== void 0 && options.trackScreens || !options) {
                 this.trackScreenChange();
                 this.setupScreenTracking();
               }
-            case 14:
+            case 15:
             case "end":
               return _context.stop();
           }
@@ -1190,6 +1192,7 @@ var QualliSDK = /*#__PURE__*/function () {
       // clear cookies
       api.remove('qualli_user_session_key');
       api.remove('qualli_user_key');
+      this.ready = false;
       this.userSessionKey = '';
       this.userKey = '';
       this.surveyToComplete = undefined;
