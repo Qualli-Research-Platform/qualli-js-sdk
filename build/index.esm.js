@@ -973,7 +973,7 @@ var ApiManager = {
 // large screen styles
 var largeScreenStyles = {
   position: 'fixed',
-  width: '400px',
+  width: '350px',
   height: '250px',
   bottom: '-100%',
   'border-radius': '12px',
@@ -1002,8 +1002,6 @@ var smallScreenStyles = {
   height: '200px',
   border: 'none',
   'max-height': '100%',
-  'border-top-left-radius': '16px',
-  'border-top-right-radius': '16px',
   transition: 'all 400ms ease-in-out'
 };
 var PopupStyles = {
@@ -1186,7 +1184,7 @@ var QualliSDK = /*#__PURE__*/function () {
     key: "performTrigger",
     value: function () {
       var _performTrigger = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee5(trigger) {
-        var res, _res$data, surveys;
+        var res, _res$data, surveys, _surveys$, delay, _res$data2;
         return _regeneratorRuntime.wrap(function _callee5$(_context5) {
           while (1) switch (_context5.prev = _context5.next) {
             case 0:
@@ -1204,22 +1202,34 @@ var QualliSDK = /*#__PURE__*/function () {
             case 5:
               res = _context5.sent;
               if (!(res !== null && res !== void 0 && res.success)) {
-                _context5.next = 12;
+                _context5.next = 16;
                 break;
               }
               // see if we have any open surveys
               surveys = res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 || (_res$data = _res$data.surveys) === null || _res$data === void 0 ? void 0 : _res$data.data;
               if (!((surveys === null || surveys === void 0 ? void 0 : surveys.length) > 0)) {
-                _context5.next = 12;
+                _context5.next = 16;
                 break;
               }
               if (this._popupInFrame) {
-                _context5.next = 12;
+                _context5.next = 16;
                 break;
               }
+              // check if the survey has a delay set (in seconds)
+              // the data will contain the timestamp of the last time the survey was shown in this format "2024-01-23T16:50:13.830Z"
+              // if the timestamp is more than the delay, show the survey
+              // if not -> queue the survey to be shown when the delay is over
+              delay = (_surveys$ = surveys[0]) === null || _surveys$ === void 0 ? void 0 : _surveys$.delay;
+              if (!delay) {
+                _context5.next = 14;
+                break;
+              }
+              this._handleSurveyDelay(surveys[0], res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 ? void 0 : _res$data2.timestamp);
+              return _context5.abrupt("return");
+            case 14:
               this._showPopup(surveys[0]);
               return _context5.abrupt("return");
-            case 12:
+            case 16:
             case "end":
               return _context5.stop();
           }
@@ -1311,7 +1321,7 @@ var QualliSDK = /*#__PURE__*/function () {
     key: "_trackScreenChange",
     value: function () {
       var _trackScreenChange2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee7() {
-        var fulllURL, path, res, _res$data2, surveys;
+        var fulllURL, path, res, _res$data3, surveys;
         return _regeneratorRuntime.wrap(function _callee7$(_context7) {
           while (1) switch (_context7.prev = _context7.next) {
             case 0:
@@ -1335,7 +1345,7 @@ var QualliSDK = /*#__PURE__*/function () {
                 break;
               }
               // see if we have any open surveys
-              surveys = res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 || (_res$data2 = _res$data2.surveys) === null || _res$data2 === void 0 ? void 0 : _res$data2.data;
+              surveys = res === null || res === void 0 || (_res$data3 = res.data) === null || _res$data3 === void 0 || (_res$data3 = _res$data3.surveys) === null || _res$data3 === void 0 ? void 0 : _res$data3.data;
               if (!((surveys === null || surveys === void 0 ? void 0 : surveys.length) > 0)) {
                 _context7.next = 14;
                 break;
@@ -1386,8 +1396,7 @@ var QualliSDK = /*#__PURE__*/function () {
       }
       if (window.innerWidth < 600) {
         Object.assign(iframe.style, _objectSpread(_objectSpread({}, PopupStyles.styles.screens.small), {}, {
-          borderTopLeftRadius: borderRadius,
-          borderTopRightRadius: borderRadius,
+          backgroundColor: survey.theme.background_color,
           zIndex: 999
         }));
       } else {
@@ -1395,6 +1404,7 @@ var QualliSDK = /*#__PURE__*/function () {
           borderRadius: borderRadius,
           borderColor: borderColor,
           borderWidth: borderWidth,
+          backgroundColor: survey.theme.background_color,
           border: 'solid',
           zIndex: 999
         }));
@@ -1416,6 +1426,28 @@ var QualliSDK = /*#__PURE__*/function () {
 
       // Event listener for messages from the iframe
       window.addEventListener('message', this._handleIframeMessages, false);
+    }
+  }, {
+    key: "_handleSurveyDelay",
+    value: function _handleSurveyDelay(survey, timestamp) {
+      var _this5 = this;
+      // block from loading new surveys
+      this._surveyToComplete = survey;
+      this._popupInFrame = true;
+      var delayInSeconds = survey.delay;
+      // calculate the time with delay
+      var delayedTime = new Date(timestamp);
+      delayedTime.setSeconds(delayedTime.getSeconds() + delayInSeconds);
+
+      // run a timer to check if the delay is over
+      var interval = setInterval(function () {
+        var now = new Date();
+        if (now >= delayedTime) {
+          // delay is over -> show the survey
+          _this5._showPopup(survey);
+          clearInterval(interval);
+        }
+      }, 200);
     }
   }, {
     key: "_handleIframeMessages",
