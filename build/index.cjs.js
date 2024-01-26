@@ -1488,9 +1488,19 @@ var QualliSDK = /*#__PURE__*/function () {
     key: "_resizePopup",
     value: function _resizePopup(height) {
       if (!isNaN(height)) {
+        var _iframe$style;
         var iframe = document.getElementById(this._popupId);
+        var totalHeight = height;
+
+        // if the popup has a border set, we should detract this from the total height
+        var borderWidth = iframe === null || iframe === void 0 || (_iframe$style = iframe.style) === null || _iframe$style === void 0 ? void 0 : _iframe$style.borderWidth; // this is given as '2px' -> we need to remove the 'px' and parse it to an int
+        // create a regex checking if it is the correct format
+        var regex = new RegExp('^\\d+(px)?$');
+        if (borderWidth && regex.test(borderWidth)) {
+          totalHeight -= parseInt(borderWidth);
+        }
         if (iframe) {
-          iframe.style.height = height + 'px';
+          iframe.style.height = totalHeight + 'px';
         }
       }
     }
