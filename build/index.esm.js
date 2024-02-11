@@ -580,7 +580,7 @@ function init (converter, defaultAttributes) {
 var api = init(defaultConverter, { path: '/' });
 
 var urls = {
-  // popupIframe: 'http://localhost:3003/surveys/popup',
+  // popupIframe: 'http://localhost:3001/surveys/popup',
   // api: 'http://localhost:8080/api/',
   popupIframe: 'https://surveys.usequalli.com/surveys/popup',
   api: 'https://api.usequalli.com/api/'
@@ -1059,6 +1059,7 @@ var QualliSDK = /*#__PURE__*/function () {
     _defineProperty(this, "_previousUrl", '');
     _defineProperty(this, "_triggerQueue", []);
     _defineProperty(this, "_attributesQueue", []);
+    _defineProperty(this, "_frameId", -1);
     _defineProperty(this, "_postMessage", function (message, data) {
       var iframe = document.getElementById(_this._popupId);
       if (iframe) {
@@ -1287,6 +1288,7 @@ var QualliSDK = /*#__PURE__*/function () {
       this._surveyToComplete = undefined;
       this._popupInFrame = false;
       this._previousUrl = '';
+      this._frameId = -1;
 
       // re-init
       setTimeout(function () {
@@ -1457,12 +1459,19 @@ var QualliSDK = /*#__PURE__*/function () {
 
       if (!(event !== null && event !== void 0 && (_event$data = event.data) !== null && _event$data !== void 0 && _event$data.message)) return;
       var message = event.data.message;
+
+      // ignore all events that are not from this frame
+      if (message.type !== 'ready') {
+        if (message.data.frame_id !== this._frameId) return;
+      }
       if (message.type === 'close') {
         // save the answers we have
         this._closePopup();
       }
       if (message.type === 'ready') {
         var _this$company;
+        this._frameId = message.data.frame_id;
+
         // send the survey data
         this._postMessage('survey_to_complete', this._surveyToComplete);
         this._postMessage('auth', {
