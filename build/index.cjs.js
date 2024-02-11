@@ -1325,7 +1325,7 @@ var QualliSDK = /*#__PURE__*/function () {
     key: "_trackScreenChange",
     value: function () {
       var _trackScreenChange2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee7() {
-        var fulllURL, path, res, _res$data3, surveys;
+        var fulllURL, path, res, _res$data3, surveys, _surveys$2, delay, _res$data4;
         return _regeneratorRuntime.wrap(function _callee7$(_context7) {
           while (1) switch (_context7.prev = _context7.next) {
             case 0:
@@ -1345,22 +1345,30 @@ var QualliSDK = /*#__PURE__*/function () {
             case 7:
               res = _context7.sent;
               if (!(res !== null && res !== void 0 && res.success)) {
-                _context7.next = 14;
+                _context7.next = 18;
                 break;
               }
               // see if we have any open surveys
               surveys = res === null || res === void 0 || (_res$data3 = res.data) === null || _res$data3 === void 0 || (_res$data3 = _res$data3.surveys) === null || _res$data3 === void 0 ? void 0 : _res$data3.data;
               if (!((surveys === null || surveys === void 0 ? void 0 : surveys.length) > 0)) {
-                _context7.next = 14;
+                _context7.next = 18;
                 break;
               }
               if (this._popupInFrame) {
-                _context7.next = 14;
+                _context7.next = 18;
                 break;
               }
+              delay = (_surveys$2 = surveys[0]) === null || _surveys$2 === void 0 ? void 0 : _surveys$2.delay;
+              if (!delay) {
+                _context7.next = 16;
+                break;
+              }
+              this._handleSurveyDelay(surveys[0], res === null || res === void 0 || (_res$data4 = res.data) === null || _res$data4 === void 0 ? void 0 : _res$data4.timestamp);
+              return _context7.abrupt("return");
+            case 16:
               this._showPopup(surveys[0]);
               return _context7.abrupt("return");
-            case 14:
+            case 18:
             case "end":
               return _context7.stop();
           }
