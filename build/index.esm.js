@@ -580,7 +580,7 @@ function init (converter, defaultAttributes) {
 var api = init(defaultConverter, { path: '/' });
 
 var urls = {
-  // popupIframe: 'http://localhost:3001/surveys/popup',
+  // popupIframe: 'http://localhost:3003/surveys/popup',
   // api: 'http://localhost:8080/api/',
   popupIframe: 'https://surveys.usequalli.com/surveys/popup',
   api: 'https://api.usequalli.com/api/'
@@ -995,11 +995,13 @@ var largeScreenRightStyles = {
 // Styles for smaller screens
 var smallScreenStyles = {
   position: 'fixed',
-  left: '0',
+  left: '16px',
+  right: '16px',
   bottom: '-100%',
   // start off screen
-  width: '100%',
+  width: 'calc(100% - 32px)',
   height: '200px',
+  'border-radius': '12px',
   border: 'none',
   'max-height': '100%',
   transition: 'all 400ms ease-in-out'
@@ -1014,6 +1016,80 @@ var PopupStyles = {
       left: largeScreenLeftStyles,
       center: largeScreenCentertStyles,
       right: largeScreenRightStyles
+    },
+    person: {
+      base: {
+        small: {
+          position: 'fixed',
+          opacity: 0,
+          transition: 'all 400ms ease-in-out',
+          cursor: 'pointer',
+          bottom: '16px',
+          background: 'none',
+          overflow: 'hidden'
+        },
+        large: {
+          position: 'fixed',
+          opacity: 0,
+          transition: 'all 400ms ease-in-out',
+          cursor: 'pointer',
+          bottom: '24px',
+          background: 'none',
+          overflow: 'hidden'
+        }
+      },
+      type: {
+        circle: {
+          small: {
+            width: '50px',
+            height: '50px',
+            'border-radius': '50%'
+          },
+          large: {
+            width: '60px',
+            height: '60px',
+            'border-radius': '50%'
+          }
+        },
+        rectangle: {
+          small: {
+            width: '50px',
+            height: '75px',
+            'border-radius': '6px'
+          },
+          large: {
+            width: '50px',
+            height: '75px',
+            'border-radius': '6px'
+          }
+        }
+      },
+      position: {
+        small: {
+          bottom_left: {
+            left: '16px'
+          },
+          bottom_center: {
+            left: '50%',
+            transform: 'translate(-50%, 0)'
+          },
+          bottom_right: {
+            right: '16px'
+          }
+        },
+        large: {
+          bottom_left: {
+            left: '24px'
+          },
+          bottom_center: {
+            left: '50%',
+            transform: 'translate(-50%, 0)'
+          },
+          bottom_right: {
+            right: '24px'
+          }
+        }
+      }
     }
   }
 };
@@ -1025,6 +1101,13 @@ var SurveyThemePopupRoundedCorners = /*#__PURE__*/function (SurveyThemePopupRoun
   SurveyThemePopupRoundedCorners["medium"] = "medium";
   SurveyThemePopupRoundedCorners["large"] = "large";
   return SurveyThemePopupRoundedCorners;
+}({});
+
+var SurveyEvents = /*#__PURE__*/function (SurveyEvents) {
+  SurveyEvents["SURVEY_COMPLETED"] = "survey_completed";
+  SurveyEvents["SURVEY_SHOWN"] = "survey_shown";
+  SurveyEvents["SURVEY_CLOSED"] = "survey_closed";
+  return SurveyEvents;
 }({});
 
 var mapPopupBorderRadiusToPx = function mapPopupBorderRadiusToPx(borderRadius) {
@@ -1043,6 +1126,47 @@ var mapPopupBorderRadiusToPx = function mapPopupBorderRadiusToPx(borderRadius) {
   }
 };
 
+var EventEmitter = /*#__PURE__*/function () {
+  function EventEmitter() {
+    _classCallCheck(this, EventEmitter);
+    _defineProperty(this, "events", {});
+  }
+  _createClass(EventEmitter, [{
+    key: "on",
+    value: function on(event, listener) {
+      var _this = this;
+      if (!this.events[event]) {
+        this.events[event] = [];
+      }
+      this.events[event].push(listener);
+      return function () {
+        return _this.off(event, listener);
+      };
+    }
+  }, {
+    key: "off",
+    value: function off(event, listener) {
+      if (!this.events[event]) return;
+      this.events[event] = this.events[event].filter(function (l) {
+        return l !== listener;
+      });
+    }
+  }, {
+    key: "emit",
+    value: function emit(event) {
+      for (var _len = arguments.length, args = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+        args[_key - 1] = arguments[_key];
+      }
+      if (!this.events[event]) return;
+      this.events[event].forEach(function (listener) {
+        return listener.apply(void 0, args);
+      });
+    }
+  }]);
+  return EventEmitter;
+}();
+var eventEmitterInstance = new EventEmitter();
+
 function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
 function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
 var QualliSDK = /*#__PURE__*/function () {
@@ -1052,6 +1176,7 @@ var QualliSDK = /*#__PURE__*/function () {
     _defineProperty(this, "company", {});
     _defineProperty(this, "ready", false);
     _defineProperty(this, "_popupId", 'qualli-survey-popup-iframe');
+    _defineProperty(this, "_personId", 'qualli-survey-person');
     _defineProperty(this, "_userSessionKey", '');
     _defineProperty(this, "_userKey", '');
     _defineProperty(this, "_apiKey", '');
@@ -1059,10 +1184,10 @@ var QualliSDK = /*#__PURE__*/function () {
     _defineProperty(this, "_previousUrl", '');
     _defineProperty(this, "_triggerQueue", []);
     _defineProperty(this, "_attributesQueue", []);
-    _defineProperty(this, "_frameId", -1);
     _defineProperty(this, "_postMessage", function (message, data) {
       var iframe = document.getElementById(_this._popupId);
       if (iframe) {
+        // @ts-ignore
         iframe.contentWindow.postMessage({
           message: {
             type: message,
@@ -1288,12 +1413,21 @@ var QualliSDK = /*#__PURE__*/function () {
       this._surveyToComplete = undefined;
       this._popupInFrame = false;
       this._previousUrl = '';
-      this._frameId = -1;
 
       // re-init
       setTimeout(function () {
         _this3.init(_this3._apiKey);
       }, 1 * 1000);
+    }
+  }, {
+    key: "on",
+    value: function on(event, listener) {
+      eventEmitterInstance.on(event, listener);
+
+      // Return an unsubscribe function
+      return function () {
+        eventEmitterInstance.off(event, listener);
+      };
     }
   }, {
     key: "_setupScreenTracking",
@@ -1382,6 +1516,7 @@ var QualliSDK = /*#__PURE__*/function () {
     value: function _showPopup(survey) {
       this._surveyToComplete = survey;
       this._popupInFrame = true;
+      var islarge = window.innerWidth > 600;
       var iframe = document.createElement('iframe');
       var queryParams = {
         survey_id: survey.unique_identifier,
@@ -1394,7 +1529,7 @@ var QualliSDK = /*#__PURE__*/function () {
       }).join('&');
       var placement = (survey === null || survey === void 0 ? void 0 : survey.popup_placement) || 'bottom_right';
       var borderRadius = mapPopupBorderRadiusToPx(survey.theme.popup_rounded_corners || SurveyThemePopupRoundedCorners.medium);
-      var borderColor = survey.theme.popup_border_color || '#000000';
+      var borderColor = '#000000';
       var borderWidth = survey.theme.popup_border_width + 'px' || 0 + 'px';
 
       // Check screen size and apply styles
@@ -1404,38 +1539,61 @@ var QualliSDK = /*#__PURE__*/function () {
       } else if (placement === 'bottom_center') {
         popupPlacementHorizontalStyles = PopupStyles.styles.popupPlacement.center;
       }
-      if (window.innerWidth < 600) {
-        Object.assign(iframe.style, _objectSpread(_objectSpread({}, PopupStyles.styles.screens.small), {}, {
-          backgroundColor: survey.theme.background_color,
-          zIndex: 999
-        }));
+      var popupStyles = {};
+      if (!islarge) {
+        Object.assign(popupStyles, _objectSpread({}, PopupStyles.styles.screens.small));
       } else {
-        Object.assign(iframe.style, _objectSpread(_objectSpread(_objectSpread({}, PopupStyles.styles.screens.large), popupPlacementHorizontalStyles), {}, {
-          borderRadius: borderRadius,
-          borderColor: borderColor,
-          borderWidth: borderWidth,
-          backgroundColor: survey.theme.background_color,
-          border: 'solid',
-          zIndex: 999
-        }));
+        Object.assign(popupStyles, _objectSpread(_objectSpread({}, PopupStyles.styles.screens.large), popupPlacementHorizontalStyles));
       }
+      Object.assign(popupStyles, {
+        borderRadius: borderRadius,
+        borderColor: borderColor,
+        borderWidth: borderWidth,
+        backgroundColor: survey.theme.background_color,
+        border: 'solid',
+        zIndex: 999
+      });
+      Object.assign(iframe.style, popupStyles);
       iframe.src = "".concat(urls.popupIframe, "?").concat(queryParmasString);
       iframe.id = this._popupId; // An identifier for the iframe
 
       // Append the iframe to the body
       document.body.appendChild(iframe);
-
-      // Start the animation
-      setTimeout(function () {
-        if (window.innerWidth < 600) {
-          iframe.style.bottom = '0';
-        } else {
-          iframe.style.bottom = '24px';
-        }
-      }, 100);
+      var person = survey === null || survey === void 0 ? void 0 : survey.person;
+      if (!!person && person.video_url) {
+        var show_survey = function show_survey() {
+          setTimeout(function () {
+            if (person.style.type === 'circle') {
+              iframe.style.bottom = '100px';
+            } else {
+              iframe.style.bottom = '115px';
+            }
+          }, person.logic === '2-step' ? 0 : 800);
+        };
+        this._addPerson(person, show_survey, islarge, survey);
+      } else {
+        // start the animation immediately
+        // Start the animation
+        setTimeout(function () {
+          if (window.innerWidth < 600) {
+            iframe.style.bottom = '16px';
+          } else {
+            iframe.style.bottom = '24px';
+          }
+        }, 100);
+      }
 
       // Event listener for messages from the iframe
       window.addEventListener('message', this._handleIframeMessages, false);
+      this._emitSurvetShown(survey);
+    }
+  }, {
+    key: "_emitSurvetShown",
+    value: function _emitSurvetShown(survey) {
+      var _this$_surveyToComple;
+      eventEmitterInstance.emit(SurveyEvents.SURVEY_SHOWN, {
+        survey_unique_identifier: (_this$_surveyToComple = this._surveyToComplete) === null || _this$_surveyToComple === void 0 ? void 0 : _this$_surveyToComple.unique_identifier
+      });
     }
   }, {
     key: "_handleSurveyDelay",
@@ -1467,19 +1625,11 @@ var QualliSDK = /*#__PURE__*/function () {
 
       if (!(event !== null && event !== void 0 && (_event$data = event.data) !== null && _event$data !== void 0 && _event$data.message)) return;
       var message = event.data.message;
-
-      // ignore all events that are not from this frame
-      if (message.type !== 'ready') {
-        if (message.data.frame_id !== this._frameId) return;
-      }
       if (message.type === 'close') {
-        // save the answers we have
         this._closePopup();
       }
       if (message.type === 'ready') {
         var _this$company;
-        this._frameId = message.data.frame_id;
-
         // send the survey data
         this._postMessage('survey_to_complete', this._surveyToComplete);
         this._postMessage('auth', {
@@ -1489,7 +1639,13 @@ var QualliSDK = /*#__PURE__*/function () {
         });
       }
       if (message.type === 'survey_completed') {
-        this._closePopup();
+        var _this$_surveyToComple2;
+        // this._closePopup();
+
+        eventEmitterInstance.emit(SurveyEvents.SURVEY_COMPLETED, {
+          survey_unique_identifier: (_this$_surveyToComple2 = this._surveyToComplete) === null || _this$_surveyToComple2 === void 0 ? void 0 : _this$_surveyToComple2.unique_identifier,
+          answers: message.data.answers
+        });
       }
       if (message.type === 'survey_aborted') {
         this._closePopup();
@@ -1522,9 +1678,14 @@ var QualliSDK = /*#__PURE__*/function () {
   }, {
     key: "_closePopup",
     value: function _closePopup() {
+      var _this$_surveyToComple3;
       this._popupInFrame = false;
       window.removeEventListener('message', this._handleIframeMessages);
+      eventEmitterInstance.emit(SurveyEvents.SURVEY_CLOSED, {
+        survey_unique_identifier: (_this$_surveyToComple3 = this._surveyToComplete) === null || _this$_surveyToComple3 === void 0 ? void 0 : _this$_surveyToComple3.unique_identifier
+      });
       var iframe = document.getElementById(this._popupId);
+      var person = document.getElementById(this._personId);
       if (iframe) {
         iframe.style.bottom = '-100%';
         iframe.style.opacity = '0';
@@ -1532,6 +1693,78 @@ var QualliSDK = /*#__PURE__*/function () {
           iframe.remove();
         }, 1 * 1000); // wait long enough for the API calls to finish
       }
+      if (person) {
+        person.style.opacity = '0';
+        person.remove();
+      }
+    }
+  }, {
+    key: "_addPerson",
+    value: function _addPerson(person, showSurvey, isLarge, survey) {
+      var personContainer = document.createElement('div');
+      var personVideo = document.createElement('video');
+      personVideo.src = person.video_url; // Assuming 'person' now has a 'video' property
+      personVideo.loop = true;
+      personVideo.muted = true;
+      personVideo.autoplay = true; // Ensure autoplay is enabled
+      personContainer.id = this._personId;
+      var personPositioningStyles = {};
+      var personTypeStyles = {};
+      var personBaseStyles = {};
+
+      // Positioning styles
+      var screenPositioningStyles = PopupStyles.styles.person.position.large;
+      if (!isLarge) {
+        screenPositioningStyles = PopupStyles.styles.person.position.small;
+      }
+      switch (survey.popup_placement || 'bottom_right') {
+        case 'bottom_left':
+          Object.assign(personPositioningStyles, _objectSpread({}, screenPositioningStyles.bottom_left));
+          break;
+        case 'bottom_center':
+          Object.assign(personPositioningStyles, _objectSpread({}, screenPositioningStyles.bottom_center));
+          break;
+        case 'bottom_right':
+          Object.assign(personPositioningStyles, _objectSpread({}, screenPositioningStyles.bottom_right));
+          break;
+      }
+
+      // Type styles
+      if (person.style.type === 'circle') {
+        Object.assign(personTypeStyles, _objectSpread({}, PopupStyles.styles.person.type.circle.large));
+      } else {
+        Object.assign(personTypeStyles, _objectSpread({}, PopupStyles.styles.person.type.rectangle.large));
+      }
+
+      // Base styles
+      Object.assign(personBaseStyles, _objectSpread({}, PopupStyles.styles.person.base.large));
+
+      // Apply combined styles to the container
+      Object.assign(personContainer.style, _objectSpread(_objectSpread(_objectSpread(_objectSpread({}, personBaseStyles), personTypeStyles), personPositioningStyles), {}, {
+        border: "solid ".concat(person.style.border_width, "px ").concat(person.style.border_color)
+      }));
+
+      // Video styles to cover the container
+      personVideo.style.width = '100%';
+      personVideo.style.height = '100%';
+      personVideo.style.objectFit = 'cover';
+
+      // Logic for showing the survey
+      if (person.logic === '2-step') {
+        personContainer.onclick = showSurvey;
+      }
+
+      // Append the video to the container and the container to the body
+      document.body.appendChild(personContainer);
+      personContainer.appendChild(personVideo);
+
+      // Fade in the container
+      setTimeout(function () {
+        personContainer.style.opacity = '1';
+        if (person.logic === '1-step') {
+          showSurvey();
+        }
+      }, 400);
     }
   }]);
   return QualliSDK;
