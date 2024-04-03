@@ -582,10 +582,10 @@ function init (converter, defaultAttributes) {
 var api = init(defaultConverter, { path: '/' });
 
 var urls = {
-  // popupIframe: 'http://localhost:3003/surveys/popup',
-  // api: 'http://localhost:8080/api/',
-  popupIframe: 'https://surveys.usequalli.com/surveys/popup',
-  api: 'https://api.usequalli.com/api/'
+  popupIframe: 'http://localhost:3001/surveys/popup',
+  api: 'http://localhost:8080/api/'
+  // popupIframe: 'https://surveys.usequalli.com/surveys/popup',
+  // api: 'https://api.usequalli.com/api/',
 };
 
 function ownKeys$1(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
@@ -1709,6 +1709,7 @@ var QualliSDK = /*#__PURE__*/function () {
       personVideo.loop = true;
       personVideo.muted = true;
       personVideo.autoplay = true; // Ensure autoplay is enabled
+      personVideo.playsInline = true; // Ensure the video plays inline on mobile
       personContainer.id = this._personId;
       var personPositioningStyles = {};
       var personTypeStyles = {};
