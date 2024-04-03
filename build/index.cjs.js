@@ -582,8 +582,6 @@ function init (converter, defaultAttributes) {
 var api = init(defaultConverter, { path: '/' });
 
 var urls = {
-  // popupIframe: 'http://localhost:3001/surveys/popup',
-  // api: 'http://localhost:8080/api/',
   popupIframe: 'https://surveys.usequalli.com/surveys/popup',
   api: 'https://api.usequalli.com/api/'
 };
