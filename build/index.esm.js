@@ -582,6 +582,9 @@ var api = init(defaultConverter, { path: '/' });
 var urls = {
   popupIframe: 'https://surveys.usequalli.com/surveys/popup',
   api: 'https://api.usequalli.com/api/'
+
+  // popupIframe: 'http://localhost:3001/surveys/popup',
+  // api: 'http://localhost:8080/api/',
 };
 
 function ownKeys$1(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
@@ -752,7 +755,7 @@ var ApiManager = {
       return _regeneratorRuntime.wrap(function _callee3$(_context3) {
         while (1) switch (_context3.prev = _context3.next) {
           case 0:
-            if (trigger !== null && trigger !== void 0 && trigger.name) {
+            if (!(!(trigger !== null && trigger !== void 0 && trigger.name) && !(trigger !== null && trigger !== void 0 && trigger.unique_id))) {
               _context3.next = 2;
               break;
             }
@@ -1182,6 +1185,9 @@ var QualliSDK = /*#__PURE__*/function () {
     _defineProperty(this, "_previousUrl", '');
     _defineProperty(this, "_triggerQueue", []);
     _defineProperty(this, "_attributesQueue", []);
+    _defineProperty(this, "_activeTriggers", []);
+    _defineProperty(this, "_trackScreens", false);
+    _defineProperty(this, "_canTrackScrollDepthAgain", true);
     _defineProperty(this, "_postMessage", function (message, data) {
       var iframe = document.getElementById(_this._popupId);
       if (iframe) {
@@ -1200,38 +1206,21 @@ var QualliSDK = /*#__PURE__*/function () {
     key: "init",
     value: function () {
       var _init = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee(apiKey, options) {
-        var userKey, userSessionKey, response;
         return _regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) switch (_context.prev = _context.next) {
             case 0:
-              // check out cookies for a use session key
-              // if no key, create one
-              // save the key in cookies
-              userKey = api.get('qualli_user_key');
-              userSessionKey = api.get('qualli_user_session_key');
               this._apiKey = apiKey;
-              _context.next = 5;
-              return ApiManager.identify(apiKey, userKey, userSessionKey);
-            case 5:
-              response = _context.sent;
-              if (!(!(response !== null && response !== void 0 && response.success) || !(response !== null && response !== void 0 && response.app_user_key) || !(response !== null && response !== void 0 && response.session_key))) {
-                _context.next = 8;
-                break;
-              }
-              return _context.abrupt("return");
-            case 8:
-              api.set('qualli_user_session_key', response.session_key);
-              api.set('qualli_user_key', response.app_user_key);
-              this._userSessionKey = response.session_key;
-              this._userKey = response.app_user_key;
-              this.company = response.company_info;
+              _context.next = 3;
+              return this.identify();
+            case 3:
               this.ready = true;
               if (options !== null && options !== void 0 && options.trackScreens || !options) {
+                this._trackScreens = true;
                 this._trackScreenChange();
-                this._setupScreenTracking();
               }
+              this._setupScreenTracking();
               this._checkQueueAfterInit();
-            case 16:
+            case 7:
             case "end":
               return _context.stop();
           }
@@ -1243,30 +1232,71 @@ var QualliSDK = /*#__PURE__*/function () {
       return init;
     }()
   }, {
-    key: "_checkQueueAfterInit",
+    key: "identify",
     value: function () {
-      var _checkQueueAfterInit2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee4() {
-        var _this2 = this;
-        return _regeneratorRuntime.wrap(function _callee4$(_context4) {
-          while (1) switch (_context4.prev = _context4.next) {
+      var _identify = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee2() {
+        var userKey, userSessionKey, response;
+        return _regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
             case 0:
-              if (!(this._attributesQueue.length > 0)) {
-                _context4.next = 3;
+              // check out cookies for a use session key
+              // if no key, create one
+              // save the key in cookies
+              userKey = api.get('qualli_user_key');
+              userSessionKey = api.get('qualli_user_session_key');
+              _context2.next = 4;
+              return ApiManager.identify(this._apiKey, userKey, userSessionKey);
+            case 4:
+              response = _context2.sent;
+              if (!(!(response !== null && response !== void 0 && response.success) || !(response !== null && response !== void 0 && response.app_user_key) || !(response !== null && response !== void 0 && response.session_key))) {
+                _context2.next = 7;
                 break;
               }
-              _context4.next = 3;
+              return _context2.abrupt("return");
+            case 7:
+              api.set('qualli_user_session_key', response.session_key);
+              api.set('qualli_user_key', response.app_user_key);
+              this._userSessionKey = response.session_key;
+              this._userKey = response.app_user_key;
+              this.company = response.company_info;
+              this._activeTriggers = response.triggers;
+              this._setupActiveTriggerTracking();
+            case 14:
+            case "end":
+              return _context2.stop();
+          }
+        }, _callee2, this);
+      }));
+      function identify() {
+        return _identify.apply(this, arguments);
+      }
+      return identify;
+    }()
+  }, {
+    key: "_checkQueueAfterInit",
+    value: function () {
+      var _checkQueueAfterInit2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee5() {
+        var _this2 = this;
+        return _regeneratorRuntime.wrap(function _callee5$(_context5) {
+          while (1) switch (_context5.prev = _context5.next) {
+            case 0:
+              if (!(this._attributesQueue.length > 0)) {
+                _context5.next = 3;
+                break;
+              }
+              _context5.next = 3;
               return Promise.all(this._attributesQueue.map( /*#__PURE__*/function () {
-                var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee2(attributes) {
-                  return _regeneratorRuntime.wrap(function _callee2$(_context2) {
-                    while (1) switch (_context2.prev = _context2.next) {
+                var _ref = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3(attributes) {
+                  return _regeneratorRuntime.wrap(function _callee3$(_context3) {
+                    while (1) switch (_context3.prev = _context3.next) {
                       case 0:
-                        _context2.next = 2;
+                        _context3.next = 2;
                         return _this2.setAttributes(attributes);
                       case 2:
                       case "end":
-                        return _context2.stop();
+                        return _context3.stop();
                     }
-                  }, _callee2);
+                  }, _callee3);
                 }));
                 return function (_x3) {
                   return _ref.apply(this, arguments);
@@ -1276,17 +1306,31 @@ var QualliSDK = /*#__PURE__*/function () {
               // see if we have any triggers to perform
               if (this._triggerQueue.length > 0) {
                 this._triggerQueue.forEach( /*#__PURE__*/function () {
-                  var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3(trigger) {
-                    return _regeneratorRuntime.wrap(function _callee3$(_context3) {
-                      while (1) switch (_context3.prev = _context3.next) {
+                  var _ref2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee4(trigger) {
+                    return _regeneratorRuntime.wrap(function _callee4$(_context4) {
+                      while (1) switch (_context4.prev = _context4.next) {
                         case 0:
-                          _context3.next = 2;
-                          return _this2.performTrigger(trigger);
-                        case 2:
+                          if (!trigger.key) {
+                            _context4.next = 5;
+                            break;
+                          }
+                          _context4.next = 3;
+                          return _this2._performTrigger(trigger.key, null);
+                        case 3:
+                          _context4.next = 8;
+                          break;
+                        case 5:
+                          if (!trigger.uniqueId) {
+                            _context4.next = 8;
+                            break;
+                          }
+                          _context4.next = 8;
+                          return _this2._performTrigger(null, trigger.uniqueId);
+                        case 8:
                         case "end":
-                          return _context3.stop();
+                          return _context4.stop();
                       }
-                    }, _callee3);
+                    }, _callee4);
                   }));
                   return function (_x4) {
                     return _ref2.apply(this, arguments);
@@ -1295,9 +1339,9 @@ var QualliSDK = /*#__PURE__*/function () {
               }
             case 4:
             case "end":
-              return _context4.stop();
+              return _context5.stop();
           }
-        }, _callee4, this);
+        }, _callee5, this);
       }));
       function _checkQueueAfterInit() {
         return _checkQueueAfterInit2.apply(this, arguments);
@@ -1307,87 +1351,46 @@ var QualliSDK = /*#__PURE__*/function () {
   }, {
     key: "performTrigger",
     value: function () {
-      var _performTrigger = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee5(trigger) {
-        var res, _res$data, surveys, _surveys$, delay, _res$data2;
-        return _regeneratorRuntime.wrap(function _callee5$(_context5) {
-          while (1) switch (_context5.prev = _context5.next) {
+      var _performTrigger2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee6(trigger) {
+        return _regeneratorRuntime.wrap(function _callee6$(_context6) {
+          while (1) switch (_context6.prev = _context6.next) {
             case 0:
-              if (this.ready) {
-                _context5.next = 3;
-                break;
-              }
-              this._triggerQueue.push(trigger);
-              return _context5.abrupt("return");
-            case 3:
-              _context5.next = 5;
-              return ApiManager.performTrigger(this._apiKey, this._userSessionKey, {
-                name: trigger
-              });
-            case 5:
-              res = _context5.sent;
-              if (!(res !== null && res !== void 0 && res.success)) {
-                _context5.next = 16;
-                break;
-              }
-              // see if we have any open surveys
-              surveys = res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 || (_res$data = _res$data.surveys) === null || _res$data === void 0 ? void 0 : _res$data.data;
-              if (!((surveys === null || surveys === void 0 ? void 0 : surveys.length) > 0)) {
-                _context5.next = 16;
-                break;
-              }
-              if (this._popupInFrame) {
-                _context5.next = 16;
-                break;
-              }
-              // check if the survey has a delay set (in seconds)
-              // the data will contain the timestamp of the last time the survey was shown in this format "2024-01-23T16:50:13.830Z"
-              // if the timestamp is more than the delay, show the survey
-              // if not -> queue the survey to be shown when the delay is over
-              delay = (_surveys$ = surveys[0]) === null || _surveys$ === void 0 ? void 0 : _surveys$.delay;
-              if (!delay) {
-                _context5.next = 14;
-                break;
-              }
-              this._handleSurveyDelay(surveys[0], res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 ? void 0 : _res$data2.timestamp);
-              return _context5.abrupt("return");
-            case 14:
-              this._showPopup(surveys[0]);
-              return _context5.abrupt("return");
-            case 16:
+              this._performTrigger(trigger, null);
+            case 1:
             case "end":
-              return _context5.stop();
+              return _context6.stop();
           }
-        }, _callee5, this);
+        }, _callee6, this);
       }));
       function performTrigger(_x5) {
-        return _performTrigger.apply(this, arguments);
+        return _performTrigger2.apply(this, arguments);
       }
       return performTrigger;
     }()
   }, {
     key: "setAttributes",
     value: function () {
-      var _setAttributes = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee6() {
+      var _setAttributes = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee7() {
         var attributes,
-          _args6 = arguments;
-        return _regeneratorRuntime.wrap(function _callee6$(_context6) {
-          while (1) switch (_context6.prev = _context6.next) {
+          _args7 = arguments;
+        return _regeneratorRuntime.wrap(function _callee7$(_context7) {
+          while (1) switch (_context7.prev = _context7.next) {
             case 0:
-              attributes = _args6.length > 0 && _args6[0] !== undefined ? _args6[0] : {};
+              attributes = _args7.length > 0 && _args7[0] !== undefined ? _args7[0] : {};
               if (this.ready) {
-                _context6.next = 4;
+                _context7.next = 4;
                 break;
               }
               this._attributesQueue.push(attributes);
-              return _context6.abrupt("return");
+              return _context7.abrupt("return");
             case 4:
-              _context6.next = 6;
+              _context7.next = 6;
               return ApiManager.setUserAttributes(this._apiKey, this._userSessionKey, attributes);
             case 6:
             case "end":
-              return _context6.stop();
+              return _context7.stop();
           }
-        }, _callee6, this);
+        }, _callee7, this);
       }));
       function setAttributes() {
         return _setAttributes.apply(this, arguments);
@@ -1452,57 +1455,152 @@ var QualliSDK = /*#__PURE__*/function () {
       });
     }
   }, {
-    key: "_trackScreenChange",
+    key: "_performTrigger",
     value: function () {
-      var _trackScreenChange2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee7() {
-        var fulllURL, path, res, _res$data3, surveys, _surveys$2, delay, _res$data4;
-        return _regeneratorRuntime.wrap(function _callee7$(_context7) {
-          while (1) switch (_context7.prev = _context7.next) {
+      var _performTrigger3 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee8(key, uniqueId) {
+        var _res;
+        var res, _res2, surveys, _surveys$, delay, _res3;
+        return _regeneratorRuntime.wrap(function _callee8$(_context8) {
+          while (1) switch (_context8.prev = _context8.next) {
             case 0:
-              fulllURL = window.location.href; // remove query params
-              path = fulllURL.split('?')[0];
-              if (!(path === this._previousUrl)) {
-                _context7.next = 4;
+              if (this.ready) {
+                _context8.next = 3;
                 break;
               }
-              return _context7.abrupt("return");
-            case 4:
-              this._previousUrl = path;
-              _context7.next = 7;
-              return ApiManager.trackScreen(this._apiKey, this._userSessionKey, {
-                url: path
+              if (key) {
+                this._triggerQueue.push({
+                  key: key
+                });
+              } else if (uniqueId) {
+                this._triggerQueue.push({
+                  uniqueId: uniqueId
+                });
+              }
+              return _context8.abrupt("return");
+            case 3:
+              if (!key) {
+                _context8.next = 9;
+                break;
+              }
+              _context8.next = 6;
+              return ApiManager.performTrigger(this._apiKey, this._userSessionKey, {
+                name: key
               });
-            case 7:
-              res = _context7.sent;
-              if (!(res !== null && res !== void 0 && res.success)) {
-                _context7.next = 18;
+            case 6:
+              res = _context8.sent;
+              _context8.next = 13;
+              break;
+            case 9:
+              if (!uniqueId) {
+                _context8.next = 13;
+                break;
+              }
+              _context8.next = 12;
+              return ApiManager.performTrigger(this._apiKey, this._userSessionKey, {
+                unique_id: uniqueId
+              });
+            case 12:
+              res = _context8.sent;
+            case 13:
+              if (!((_res = res) !== null && _res !== void 0 && _res.success)) {
+                _context8.next = 23;
                 break;
               }
               // see if we have any open surveys
-              surveys = res === null || res === void 0 || (_res$data3 = res.data) === null || _res$data3 === void 0 || (_res$data3 = _res$data3.surveys) === null || _res$data3 === void 0 ? void 0 : _res$data3.data;
+              surveys = (_res2 = res) === null || _res2 === void 0 || (_res2 = _res2.data) === null || _res2 === void 0 || (_res2 = _res2.surveys) === null || _res2 === void 0 ? void 0 : _res2.data;
               if (!((surveys === null || surveys === void 0 ? void 0 : surveys.length) > 0)) {
-                _context7.next = 18;
+                _context8.next = 23;
                 break;
               }
               if (this._popupInFrame) {
-                _context7.next = 18;
+                _context8.next = 23;
+                break;
+              }
+              // check if the survey has a delay set (in seconds)
+              // the data will contain the timestamp of the last time the survey was shown in this format "2024-01-23T16:50:13.830Z"
+              // if the timestamp is more than the delay, show the survey
+              // if not -> queue the survey to be shown when the delay is over
+              delay = (_surveys$ = surveys[0]) === null || _surveys$ === void 0 ? void 0 : _surveys$.delay;
+              if (!delay) {
+                _context8.next = 21;
+                break;
+              }
+              this._handleSurveyDelay(surveys[0], (_res3 = res) === null || _res3 === void 0 || (_res3 = _res3.data) === null || _res3 === void 0 ? void 0 : _res3.timestamp);
+              return _context8.abrupt("return");
+            case 21:
+              this._showPopup(surveys[0]);
+              return _context8.abrupt("return");
+            case 23:
+            case "end":
+              return _context8.stop();
+          }
+        }, _callee8, this);
+      }));
+      function _performTrigger(_x6, _x7) {
+        return _performTrigger3.apply(this, arguments);
+      }
+      return _performTrigger;
+    }()
+  }, {
+    key: "_trackScreenChange",
+    value: function () {
+      var _trackScreenChange2 = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee9() {
+        var fulllURL, path, res, _res$data, surveys, _surveys$2, delay, _res$data2;
+        return _regeneratorRuntime.wrap(function _callee9$(_context9) {
+          while (1) switch (_context9.prev = _context9.next) {
+            case 0:
+              // every new page the scroll depth should be tracked again
+              this._canTrackScrollDepthAgain = true;
+              if (this._trackScreens) {
+                _context9.next = 3;
+                break;
+              }
+              return _context9.abrupt("return");
+            case 3:
+              fulllURL = window.location.href; // remove query params
+              path = fulllURL.split('?')[0];
+              if (!(path === this._previousUrl)) {
+                _context9.next = 7;
+                break;
+              }
+              return _context9.abrupt("return");
+            case 7:
+              this._previousUrl = path;
+              _context9.next = 10;
+              return ApiManager.trackScreen(this._apiKey, this._userSessionKey, {
+                url: path
+              });
+            case 10:
+              res = _context9.sent;
+              if (!(res !== null && res !== void 0 && res.success)) {
+                _context9.next = 21;
+                break;
+              }
+              // see if we have any open surveys
+              surveys = res === null || res === void 0 || (_res$data = res.data) === null || _res$data === void 0 || (_res$data = _res$data.surveys) === null || _res$data === void 0 ? void 0 : _res$data.data;
+              if (!((surveys === null || surveys === void 0 ? void 0 : surveys.length) > 0)) {
+                _context9.next = 21;
+                break;
+              }
+              if (this._popupInFrame) {
+                _context9.next = 21;
                 break;
               }
               delay = (_surveys$2 = surveys[0]) === null || _surveys$2 === void 0 ? void 0 : _surveys$2.delay;
               if (!delay) {
-                _context7.next = 16;
+                _context9.next = 19;
                 break;
               }
-              this._handleSurveyDelay(surveys[0], res === null || res === void 0 || (_res$data4 = res.data) === null || _res$data4 === void 0 ? void 0 : _res$data4.timestamp);
-              return _context7.abrupt("return");
-            case 16:
+              this._handleSurveyDelay(surveys[0], res === null || res === void 0 || (_res$data2 = res.data) === null || _res$data2 === void 0 ? void 0 : _res$data2.timestamp);
+              return _context9.abrupt("return");
+            case 19:
               this._showPopup(surveys[0]);
-              return _context7.abrupt("return");
-            case 18:
+              return _context9.abrupt("return");
+            case 21:
             case "end":
-              return _context7.stop();
+              return _context9.stop();
           }
-        }, _callee7, this);
+        }, _callee9, this);
       }));
       function _trackScreenChange() {
         return _trackScreenChange2.apply(this, arguments);
@@ -1764,6 +1862,60 @@ var QualliSDK = /*#__PURE__*/function () {
           showSurvey();
         }
       }, 400);
+    }
+  }, {
+    key: "_setupActiveTriggerTracking",
+    value: function _setupActiveTriggerTracking() {
+      var _this6 = this,
+        _this$_activeTriggers,
+        _this$_activeTriggers2;
+      var throttle = function throttle(func, limit) {
+        var inThrottle;
+        return function () {
+          var args = arguments;
+          // @ts-ignore
+          var context = this;
+          if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(function () {
+              return inThrottle = false;
+            }, limit);
+          }
+        };
+      };
+      var checkScrollDepth = throttle(function () {
+        if (!_this6._canTrackScrollDepthAgain) return;
+        var scrollDepth = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight) * 100;
+        _this6._activeTriggers.forEach(function (trigger) {
+          if (trigger.scroll_depth && scrollDepth >= trigger.scroll_depth) {
+            _this6._canTrackScrollDepthAgain = false;
+            _this6._performTrigger(null, trigger.unique_identifier);
+          }
+        });
+      }, 200);
+      if ((_this$_activeTriggers = this._activeTriggers) !== null && _this$_activeTriggers !== void 0 && _this$_activeTriggers.some(function (t) {
+        return t.scroll_depth !== null;
+      })) {
+        window.addEventListener('scroll', checkScrollDepth);
+      }
+      var checkElementInteraction = function checkElementInteraction(event) {
+        var _this6$_activeTrigger;
+        (_this6$_activeTrigger = _this6._activeTriggers) === null || _this6$_activeTrigger === void 0 || _this6$_activeTrigger.forEach(function (trigger) {
+          // Handle non-scroll triggers
+          var targetElement = event.target;
+          if (trigger.css_selector && targetElement.matches(trigger.css_selector)) {
+            _this6._performTrigger(null, trigger.unique_identifier);
+          } else if (trigger.inner_text && targetElement.innerText === trigger.inner_text) {
+            _this6._performTrigger(null, trigger.unique_identifier);
+          }
+        });
+      };
+      if ((_this$_activeTriggers2 = this._activeTriggers) !== null && _this$_activeTriggers2 !== void 0 && _this$_activeTriggers2.some(function (t) {
+        return t.unique_key || t.css_selector || t.inner_text;
+      })) {
+        document.body.addEventListener('click', checkElementInteraction);
+      }
     }
   }]);
   return QualliSDK;
