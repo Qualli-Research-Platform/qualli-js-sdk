@@ -750,8 +750,8 @@ var ApiManager = {
     return setUserAttributes;
   }(),
   performTrigger: function () {
-    var _performTrigger = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3(apiKey, userSessionKey, trigger) {
-      var url, headers, jsonResponse;
+    var _performTrigger = _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime.mark(function _callee3(apiKey, userSessionKey, trigger, url) {
+      var _url, headers, jsonResponse;
       return _regeneratorRuntime.wrap(function _callee3$(_context3) {
         while (1) switch (_context3.prev = _context3.next) {
           case 0:
@@ -761,7 +761,7 @@ var ApiManager = {
             }
             return _context3.abrupt("return");
           case 2:
-            url = "".concat(API_BASE_PATH, "app-user-events/trigger");
+            _url = "".concat(API_BASE_PATH, "app-user-events/trigger");
             if (userSessionKey) {
               _context3.next = 6;
               break;
@@ -776,11 +776,12 @@ var ApiManager = {
             _context3.next = 10;
             return ApiRequest({
               apiKey: apiKey,
-              url: url,
+              url: _url,
               method: 'POST',
               headers: headers,
               body: {
                 trigger: trigger,
+                url: url,
                 timestamp: new Date()
               }
             });
@@ -805,7 +806,7 @@ var ApiManager = {
         }
       }, _callee3, null, [[7, 16]]);
     }));
-    function performTrigger(_x7, _x8, _x9) {
+    function performTrigger(_x7, _x8, _x9, _x10) {
       return _performTrigger.apply(this, arguments);
     }
     return performTrigger;
@@ -866,7 +867,7 @@ var ApiManager = {
         }
       }, _callee4, null, [[7, 16]]);
     }));
-    function trackScreen(_x10, _x11, _x12) {
+    function trackScreen(_x11, _x12, _x13) {
       return _trackScreen.apply(this, arguments);
     }
     return trackScreen;
@@ -915,7 +916,7 @@ var ApiManager = {
         }
       }, _callee5, null, [[5, 10]]);
     }));
-    function logSurveyAction(_x13, _x14, _x15, _x16, _x17) {
+    function logSurveyAction(_x14, _x15, _x16, _x17, _x18) {
       return _logSurveyAction.apply(this, arguments);
     }
     return logSurveyAction;
@@ -964,7 +965,7 @@ var ApiManager = {
         }
       }, _callee6, null, [[5, 10]]);
     }));
-    function logEvent(_x18, _x19, _x20) {
+    function logEvent(_x19, _x20, _x21) {
       return _logEvent.apply(this, arguments);
     }
     return logEvent;
@@ -983,14 +984,14 @@ var largeScreenStyles = {
   transition: 'all 400ms ease-in-out'
 };
 var largeScreenLeftStyles = {
-  left: '24px'
+  left: '16px'
 };
 var largeScreenCentertStyles = {
   left: '50%',
   transform: 'translate(-50%, 0)'
 };
 var largeScreenRightStyles = {
-  right: '24px'
+  right: '16px'
 };
 
 // Styles for smaller screens
@@ -1034,7 +1035,7 @@ var PopupStyles = {
           opacity: 0,
           transition: 'all 400ms ease-in-out',
           cursor: 'pointer',
-          bottom: '24px',
+          bottom: '16px',
           background: 'none',
           overflow: 'hidden'
         }
@@ -1042,25 +1043,25 @@ var PopupStyles = {
       type: {
         circle: {
           small: {
-            width: '50px',
-            height: '50px',
+            width: '60px',
+            height: '60px',
             'border-radius': '50%'
           },
           large: {
-            width: '60px',
-            height: '60px',
+            width: '75px',
+            height: '75px',
             'border-radius': '50%'
           }
         },
         rectangle: {
           small: {
-            width: '50px',
-            height: '75px',
+            width: '60px',
+            height: '90px',
             'border-radius': '6px'
           },
           large: {
-            width: '50px',
-            height: '75px',
+            width: '60px',
+            height: '90px',
             'border-radius': '6px'
           }
         }
@@ -1080,14 +1081,14 @@ var PopupStyles = {
         },
         large: {
           bottom_left: {
-            left: '24px'
+            left: '16px'
           },
           bottom_center: {
             left: '50%',
             transform: 'translate(-50%, 0)'
           },
           bottom_right: {
-            right: '24px'
+            right: '16px'
           }
         }
       }
@@ -1454,6 +1455,9 @@ var QualliSDK = /*#__PURE__*/function () {
         _this4._trackScreenChange();
       });
     }
+
+    // key is the unique_key created by the user
+    // uniqueId is the unique_identifier created by Qualli
   }, {
     key: "_performTrigger",
     value: function () {
@@ -1485,7 +1489,7 @@ var QualliSDK = /*#__PURE__*/function () {
               _context8.next = 6;
               return ApiManager.performTrigger(this._apiKey, this._userSessionKey, {
                 name: key
-              });
+              }, window.location.href);
             case 6:
               res = _context8.sent;
               _context8.next = 13;
@@ -1498,7 +1502,7 @@ var QualliSDK = /*#__PURE__*/function () {
               _context8.next = 12;
               return ApiManager.performTrigger(this._apiKey, this._userSessionKey, {
                 unique_id: uniqueId
-              });
+              }, window.location.href);
             case 12:
               res = _context8.sent;
             case 13:
